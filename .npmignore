@@ -1,0 +1,25 @@
+# 开发目录和文件
+node_modules/
+.idea/
+.vscode/
+*.log
+*.lock
+.DS_Store
+
+# 源代码 (因为我们只发布构建后的文件)
+src/
+
+# 开发配置文件
+rollup.config.js
+babel.config.js
+.eslintrc
+.prettierrc
+
+# 测试文件
+__tests__/
+*.test.js
+*.spec.js
+
+# 其他不需要发布的文件
+README.md
+LICENSE 
