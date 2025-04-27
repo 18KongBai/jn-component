@@ -1,0 +1,35 @@
+.tabBar {
+	position: fixed;
+	bottom: 0;
+	display: flex;
+	justify-content: space-evenly;
+	box-sizing: content-box;
+	width: 100%;
+	height: calc(125 / 32 * 1rem);
+	padding-bottom: constant(safe-area-inset-bottom, calc(30 / 32 * 1rem));
+	padding-bottom: env(safe-area-inset-bottom, calc(30 / 32 * 1rem));
+	border-radius: calc(28 / 32 * 1rem) calc(28 / 32 * 1rem) 0 0;
+	background-image: linear-gradient(180deg, #ffe8cf 0%, #fff 100%);
+}
+
+.tabBar > .tabItem {
+	position: relative;
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	color: #333;
+	font-weight: 400;
+	font-size: calc(24 / 32 * 1rem);
+}
+
+.tabBar > .tabItem img {
+	width: 50%;
+	object-fit: contain;
+}
+
+.tabBar > .active {
+	color: #cc1f1f;
+	font-weight: 500;
+}

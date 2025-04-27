@@ -1,18 +1,6 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from './table.module.css';
-
-function debounce(fn, delay) {
-  let timer = null;
-  return (...args) => {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(() => {
-      fn(...args);
-    }, delay);
-  };
-}
 
 const Table = ({
   columns = [],
@@ -27,18 +15,22 @@ const Table = ({
     enabled: false,
     rowHeight: 48,
     overscan: 5, // 上下额外渲染的行数
-  }
+    throttleDelay: 200, //节流时间
+  },
 }) => {
   const tableRef = useRef(null);
   const tableBodyRef = useRef(null);
-  
+  // 使用 useRef 存储上一次执行时间和定时器ID
+  const lastTimeRef = useRef(0);
+  const timerRef = useRef(null);
+
   // 虚拟列表状态
   const [virtualState, setVirtualState] = useState({
     startIndex: 0,
     endIndex: 0,
     scrollTop: 0,
     visibleCount: 0,
-    totalHeight: 0
+    totalHeight: 0,
   });
 
   // 使用useMemo缓存列配置，避免不必要的重渲染
@@ -66,12 +58,12 @@ const Table = ({
       // 计算表格总高度
       const totalHeight = data.length * rowHeight;
       // 计算需要渲染的行数
-      setVirtualState(prev => ({
+      setVirtualState((prev) => ({
         ...prev,
         visibleCount,
         totalHeight,
         // 计算需要渲染的行数
-        endIndex: Math.min(visibleCount + virtualList.overscan - 1, data.length - 1)
+        endIndex: Math.min(visibleCount + virtualList.overscan - 1, data.length - 1),
       }));
     }
   }, [data.length, virtualList.enabled, virtualList.rowHeight, virtualList.overscan]);
@@ -87,35 +79,67 @@ const Table = ({
       const visibleCount = virtualState.visibleCount;
       const endIndex = Math.min(
         startIndex + visibleCount + 2 * virtualList.overscan,
-        data.length - 1
+        data.length - 1,
       );
-      
-      setVirtualState(prev => ({
+
+      setVirtualState((prev) => ({
         ...prev,
         startIndex,
         endIndex,
-        scrollTop
+        scrollTop,
       }));
     }
   };
 
+  // 处理滚动事件
   const handleScroll = (e) => {
     const scrollTop = e.target.scrollTop;
     const scrollHeight = tableRef.current.scrollHeight;
     const clientHeight = tableRef.current.clientHeight;
-    
+
     // 虚拟列表滚动处理
     if (virtualList.enabled) {
       updateVirtualView(scrollTop);
     }
-    
+
     // 滚动到底部检测
     if (scrollTop + clientHeight >= scrollHeight) {
       onScrollEnd && onScrollEnd();
     }
   };
 
-  const debounceScroll = debounce(handleScroll, 100);
+  // 使用 useCallback 创建一个稳定的"带尾部触发"的节流函数
+  const throttledScroll = useCallback(
+    (e) => {
+      const now = Date.now();
+      // 优先使用virtualList.throttleDelay，没有则默认200
+      const throttleDelay = virtualList.throttleDelay ?? 200;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      timerRef.current = setTimeout(() => {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+        handleScroll(e);
+      }, throttleDelay + 300);
+      if (now - lastTimeRef.current >= throttleDelay) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+        lastTimeRef.current = now;
+        handleScroll(e);
+      }
+    },
+    [lastTimeRef, timerRef, virtualList.throttleDelay],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [timerRef.current]);
 
   // 计算需要渲染的数据
   const renderData = useMemo(() => {
@@ -143,7 +167,7 @@ const Table = ({
   }, [virtualList.enabled, data.length, virtualState.endIndex, virtualList.rowHeight]);
 
   return (
-    <div className={styles.tableContainer} ref={tableRef} onScroll={debounceScroll} style={style}>
+    <div className={styles.tableContainer} ref={tableRef} onScroll={throttledScroll} style={style}>
       <table className={styles.table}>
         <thead>
           <tr className={headerClassName}>
@@ -159,13 +183,13 @@ const Table = ({
           {virtualList.enabled && topPadding > 0 && (
             <tr style={{ height: `${topPadding}px` }} className={styles.virtualSpacerRow} />
           )}
-          
+
           {/* 渲染可见行 */}
           {renderData.map((row, localIndex) => {
-            const rowIndex = virtualList.enabled 
-              ? virtualState.startIndex + localIndex 
+            const rowIndex = virtualList.enabled
+              ? virtualState.startIndex + localIndex
               : localIndex;
-              
+
             return (
               <tr
                 key={rowKey ? row[rowKey] : rowIndex}
@@ -189,7 +213,7 @@ const Table = ({
               </tr>
             );
           })}
-          
+
           {/* 虚拟列表底部填充 */}
           {virtualList.enabled && bottomPadding > 0 && (
             <tr style={{ height: `${bottomPadding}px` }} className={styles.virtualSpacerRow} />
@@ -218,32 +242,32 @@ Table.propTypes = {
    * ]
    */
   columns: PropTypes.array.isRequired,
-  
+
   /**
    * 数据数组
    */
   data: PropTypes.array,
-  
+
   /**
    * 表格容器样式
    */
   style: PropTypes.object,
-  
+
   /**
    * 表格行的key，如果指定则用作行的key值，否则使用索引
    */
   rowKey: PropTypes.string,
-  
+
   /**
    * 行点击事件
    */
   onRowClick: PropTypes.func,
-  
+
   /**
    * 表头行的类名
    */
   headerClassName: PropTypes.string,
-  
+
   /**
    * 行的类名
    */
@@ -265,8 +289,9 @@ Table.propTypes = {
   virtualList: PropTypes.shape({
     enabled: PropTypes.bool,
     rowHeight: PropTypes.number,
-    overscan: PropTypes.number
-  })
+    overscan: PropTypes.number,
+    throttleDelay: PropTypes.number,
+  }),
 };
 
 export default React.memo(Table);
