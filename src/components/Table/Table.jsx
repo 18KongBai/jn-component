@@ -69,44 +69,56 @@ const Table = ({
   }, [data.length, virtualList.enabled, virtualList.rowHeight, virtualList.overscan]);
 
   // 处理滚动更新虚拟列表视图
-  const updateVirtualView = (scrollTop) => {
-    if (virtualList.enabled && data.length > 0) {
-      const rowHeight = virtualList.rowHeight;
-      // 计算当前滚动到的行
-      const currentIndex = Math.floor(scrollTop / rowHeight);
-      // 计算需要渲染的行数
-      const startIndex = Math.max(0, currentIndex - virtualList.overscan);
-      const visibleCount = virtualState.visibleCount;
-      const endIndex = Math.min(
-        startIndex + visibleCount + 2 * virtualList.overscan,
-        data.length - 1,
-      );
+  const updateVirtualView = useCallback(
+    (scrollTop) => {
+      if (virtualList.enabled && data.length > 0) {
+        const rowHeight = virtualList.rowHeight;
+        // 计算当前滚动到的行
+        const currentIndex = Math.floor(scrollTop / rowHeight);
+        // 计算需要渲染的行数
+        const startIndex = Math.max(0, currentIndex - virtualList.overscan);
+        const visibleCount = virtualState.visibleCount;
+        const endIndex = Math.min(
+          startIndex + visibleCount + 2 * virtualList.overscan,
+          data.length - 1,
+        );
 
-      setVirtualState((prev) => ({
-        ...prev,
-        startIndex,
-        endIndex,
-        scrollTop,
-      }));
-    }
-  };
+        setVirtualState((prev) => ({
+          ...prev,
+          startIndex,
+          endIndex,
+          scrollTop,
+        }));
+      }
+    },
+    [
+      data.length,
+      virtualList.enabled,
+      virtualList.rowHeight,
+      virtualState.visibleCount,
+      virtualList.overscan,
+    ],
+  );
 
   // 处理滚动事件
-  const handleScroll = (e) => {
-    const scrollTop = e.target.scrollTop;
-    const scrollHeight = tableRef.current.scrollHeight;
-    const clientHeight = tableRef.current.clientHeight;
+  const handleScroll = useCallback(
+    (e) => {
+      const scrollTop = e.target.scrollTop;
+      const scrollHeight = tableRef.current.scrollHeight;
+      const clientHeight = tableRef.current.clientHeight;
 
-    // 虚拟列表滚动处理
-    if (virtualList.enabled) {
-      updateVirtualView(scrollTop);
-    }
+      // 虚拟列表滚动处理
+      if (virtualList.enabled) {
+        updateVirtualView(scrollTop);
+      }
 
-    // 滚动到底部检测
-    if (scrollTop + clientHeight >= scrollHeight) {
-      onScrollEnd && onScrollEnd();
-    }
-  };
+      // 滚动到底部检测
+      if (scrollTop + clientHeight >= scrollHeight) {
+        onScrollEnd && onScrollEnd();
+      }
+    },
+    [onScrollEnd, updateVirtualView, virtualList],
+  );
 
   // 使用 useCallback 创建一个稳定的"带尾部触发"的节流函数
   const throttledScroll = useCallback(
@@ -130,7 +142,7 @@ const Table = ({
         handleScroll(e);
       }
     },
-    [lastTimeRef, timerRef, virtualList.throttleDelay],
+    [lastTimeRef, timerRef, virtualList, handleScroll],
   );
 
   useEffect(() => {
@@ -139,7 +151,7 @@ const Table = ({
         clearTimeout(timerRef.current);
       }
     };
-  }, [timerRef.current]);
+  }, [timerRef]);
 
   // 计算需要渲染的数据
   const renderData = useMemo(() => {

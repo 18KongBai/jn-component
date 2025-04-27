@@ -1,61 +1,61 @@
 .tableContainer {
-  position: relative;
+	position: relative;
 	width: 100%;
 	height: 100%;
-  overflow-y: auto;
-  background-color: #fff;
+	overflow-y: auto;
+	background-color: #fff;
 }
 
 .table {
-  position: relative;
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: auto;
-  border: none;
+	position: relative;
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: auto;
+	border: none;
 }
 
 thead {
-  position: sticky;
+	position: sticky;
 	top: 0;
 	z-index: 1;
 	width: 100%;
 }
 
 thead tr {
-  width: 100%;
-  font-size: 14px;
-  height: 41px;
-  color: #BF7243;
+	width: 100%;
+	font-size: 14px;
+	height: 41px;
+	color: #bf7243;
 	background-color: #ffe5ad;
 }
 
 tr td,
 tr th {
-  height: 100%;
-  padding: 0;
-  margin: 0;
+	height: 100%;
+	padding: 0;
+	margin: 0;
 }
 
 tr td * {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
 
 tbody tr {
-  background-color: #fff;
-  height: 48px;
-  border-bottom: 0.5px solid #F0F0F0;
+	background-color: #fff;
+	height: 48px;
+	border-bottom: 0.5px solid #f0f0f0;
 }
 
 /* 虚拟列表相关样式 */
 .virtualSpacerRow {
-  background-color: transparent !important;
-  border-bottom: none !important;
-  pointer-events: none;
+	background-color: transparent !important;
+	border-bottom: none !important;
+	pointer-events: none;
 }
 
 /* 确保表格容器有正确的行为用于虚拟列表 */
 .tableContainer.hasVirtualList {
-  overflow-y: auto;
-  contain: strict;
+	overflow-y: auto;
+	contain: strict;
 }
